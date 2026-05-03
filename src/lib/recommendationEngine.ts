@@ -145,7 +145,6 @@ export function buildAssistantMessage(
   rawContent: string,
   question: string,
   role: Role,
-  parseFailed: boolean
 ): ChatMessage {
   const tool = classifyTool(question);
   const evidenceType = classifyEvidenceType(question);
@@ -161,9 +160,7 @@ export function buildAssistantMessage(
     riskLevel
   );
 
-  const content = parseFailed
-    ? `**Warning: Response format could not be fully parsed. Displaying raw AI response.**\n\n${rawContent}`
-    : rawContent;
+  const content = rawContent;
 
   return {
     id: crypto.randomUUID(),
