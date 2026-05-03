@@ -1,4 +1,3 @@
-const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 const PIPELINE_CONTEXT = `
@@ -122,8 +121,9 @@ export default async function handler(req: any, res: any) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  const GROQ_API_KEY = process.env.GROQ_API_KEY;
   if (!GROQ_API_KEY) {
-    return res.status(500).json({ error: 'Server configuration error: GROQ_API_KEY not set' });
+    return res.status(500).json({ error: 'Server configuration error: GROQ_API_KEY is not set in Vercel environment variables' });
   }
 
   try {
