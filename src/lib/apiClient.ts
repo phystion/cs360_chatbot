@@ -16,7 +16,8 @@ export async function sendChatMessage(
   });
 
   if (!response.ok) {
-    throw new Error(`API error: ${response.status}`);
+    const body = await response.json().catch(() => ({}));
+    throw new Error(`API error ${response.status}: ${body.error || 'unknown error'}`);
   }
 
   const data = await response.json();
