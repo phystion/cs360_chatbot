@@ -60,7 +60,7 @@ function clamp(pos: Position, height: number): Position {
 
 export function TestPanel({ activeRole, signedInRole, onChange }: Props) {
   const [open, setOpen] = useState(true);
-  const [hidden, setHidden] = useState(false);
+  const [hidden, setHidden] = useState(true);
   const [pos, setPos] = useState<Position>(getInitialPosition);
   const dragState = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null);
   const isTesting = activeRole !== signedInRole;

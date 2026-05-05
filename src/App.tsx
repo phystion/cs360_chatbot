@@ -43,26 +43,18 @@ function getInitialUsername(): string {
   return localStorage.getItem('pharmora-signal-username') || '';
 }
 
-function getInitialSidebarCollapsed(): boolean {
-  return localStorage.getItem('pharmora-sidebar-collapsed') === '1';
-}
-
 function App() {
   const [screen, setScreen] = useState<Screen>('login');
   const [role, setRole] = useState<Role>(getInitialRole);
   const [signedInRole, setSignedInRole] = useState<Role>(getInitialSignedInRole);
   const [username, setUsername] = useState<string>(getInitialUsername);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(getInitialSidebarCollapsed);
-
-  useEffect(() => {
-    localStorage.setItem('pharmora-sidebar-collapsed', sidebarCollapsed ? '1' : '0');
-  }, [sidebarCollapsed]);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(true);
   const [conversations, setConversations] = useState<StoredConversation[]>(() => loadConversations('strategy'));
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [auditRecords, setAuditRecords] = useState<AuditRecord[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [viewingMessage, setViewingMessage] = useState<ChatMessageType | null>(null);
-  const [evidenceOpen, setEvidenceOpen] = useState(true);
+  const [evidenceOpen, setEvidenceOpen] = useState(false);
   const isFirstRender = useRef(true);
 
   const activeConversation = conversations.find((c) => c.id === activeConversationId);
