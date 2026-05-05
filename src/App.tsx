@@ -55,6 +55,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [viewingMessage, setViewingMessage] = useState<ChatMessageType | null>(null);
   const [evidenceOpen, setEvidenceOpen] = useState(false);
+  const [testPanelVisible, setTestPanelVisible] = useState(false);
   const isFirstRender = useRef(true);
 
   const activeConversation = conversations.find((c) => c.id === activeConversationId);
@@ -402,8 +403,19 @@ function App() {
         evidenceOpen={evidenceOpen}
         onToggleEvidence={() => setEvidenceOpen((o) => !o)}
       />
-      <DepartmentPanel role={role} open={evidenceOpen} auditRecords={auditRecords} />
-      <TestPanel activeRole={role} signedInRole={signedInRole} onChange={setRole} />
+      <DepartmentPanel
+        role={role}
+        open={evidenceOpen}
+        auditRecords={auditRecords}
+        onShowTestPanel={() => setTestPanelVisible(true)}
+      />
+      <TestPanel
+        activeRole={role}
+        signedInRole={signedInRole}
+        onChange={setRole}
+        visible={testPanelVisible}
+        onHide={() => setTestPanelVisible(false)}
+      />
     </div>
   );
 }

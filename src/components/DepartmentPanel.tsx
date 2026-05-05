@@ -7,6 +7,7 @@ import {
   Check,
   CircleDot,
   Activity,
+  Eye,
   GripVertical,
   PlusCircle,
   RotateCcw,
@@ -160,9 +161,10 @@ interface Props {
   role: Role;
   open: boolean;
   auditRecords: AuditRecord[];
+  onShowTestPanel: () => void;
 }
 
-export function DepartmentPanel({ role, open, auditRecords }: Props) {
+export function DepartmentPanel({ role, open, auditRecords, onShowTestPanel }: Props) {
   const [panelWidth, setPanelWidth] = useState(() => {
     const saved = Number(localStorage.getItem('pharmora-panel-width'));
     return Number.isFinite(saved) ? clampNumber(saved, 280, 620) : 320;
@@ -263,6 +265,15 @@ export function DepartmentPanel({ role, open, auditRecords }: Props) {
           <div className="department-panel-topbar-titles">
             <span className="department-panel-topbar-title">IMPORTANT</span>
           </div>
+          <button
+            type="button"
+            className="department-panel-view-as-toggle"
+            onClick={onShowTestPanel}
+            aria-label="Open View as panel"
+            title="Open View as panel"
+          >
+            <Eye size={14} />
+          </button>
         </div>
         <KeepInMindList />
       </div>

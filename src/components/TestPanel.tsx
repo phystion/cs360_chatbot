@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Briefcase, FlaskConical, DollarSign, Megaphone, ShieldCheck, Server, RotateCcw, GripVertical, Minus, Plus, Eye, ChevronsRight, ChevronRight, LucideProps } from 'lucide-react';
+import { Briefcase, FlaskConical, DollarSign, Megaphone, ShieldCheck, Server, RotateCcw, GripVertical, Minus, Plus, Eye, X, LucideProps } from 'lucide-react';
 import { Role } from '../types';
 import { roleConfigs } from '../data/roleConfig';
 
@@ -23,6 +23,8 @@ interface Props {
   activeRole: Role;
   signedInRole: Role;
   onChange: (role: Role) => void;
+  visible: boolean;
+  onHide: () => void;
 }
 
 const STORAGE_KEY = 'pharmora-test-panel-pos';
@@ -58,9 +60,8 @@ function clamp(pos: Position, height: number): Position {
   };
 }
 
-export function TestPanel({ activeRole, signedInRole, onChange }: Props) {
+export function TestPanel({ activeRole, signedInRole, onChange, visible, onHide }: Props) {
   const [open, setOpen] = useState(true);
-  const [hidden, setHidden] = useState(true);
   const [pos, setPos] = useState<Position>(getInitialPosition);
   const dragState = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null);
   const isTesting = activeRole !== signedInRole;
@@ -107,19 +108,7 @@ export function TestPanel({ activeRole, signedInRole, onChange }: Props) {
     }
   }, []);
 
-  if (hidden) {
-    const tabTop = Math.max(60, Math.min(pos.y + 10, window.innerHeight - 100));
-    return (
-      <button
-        className="floating-test-tab"
-        style={{ top: tabTop }}
-        onClick={() => setHidden(false)}
-        aria-label="Show View as panel"
-      >
-        <ChevronRight size={14} />
-      </button>
-    );
-  }
+  if (!visible) return null;
 
   return (
     <div
@@ -150,11 +139,11 @@ export function TestPanel({ activeRole, signedInRole, onChange }: Props) {
         <button
           className="floating-test-dismiss"
           data-no-drag
-          onClick={() => setHidden(true)}
-          aria-label="Hide panel"
-          title="Hide panel to side"
+          onClick={onHide}
+          aria-label="Close panel"
+          title="Close panel"
         >
-          <ChevronsRight size={12} />
+          <X size={12} />
         </button>
       </div>
 
