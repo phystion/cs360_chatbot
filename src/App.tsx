@@ -163,7 +163,7 @@ function App() {
       const historyMessages = [...priorMessages, { role: 'user' as const, content }];
 
       const rawResponse = await sendChatMessage(historyMessages, role);
-      const assistantMessage = buildAssistantMessage(rawResponse, content, role);
+      const assistantMessage = { ...buildAssistantMessage(rawResponse, content, role), isTyping: true };
 
       setConversations((prev) => {
         const updated = prev.map((c) =>
@@ -237,6 +237,102 @@ function App() {
     setScreen('recommendation');
   };
 
+  const handleBranchMessage = (msg: ChatMessageType) => {
+    const conv = conversations.find((c) => c.id === activeConversationId);
+    if (!conv) return;
+    const msgIndex = conv.messages.findIndex((m) => m.id === msg.id);
+    if (msgIndex === -1) return;
+    const branchedMessages = conv.messages.slice(0, msgIndex + 1);
+    const newConv: StoredConversation = {
+      id: crypto.randomUUID(),
+      title: `Branch: ${conv.title}`,
+      timestamp: Date.now(),
+      messages: branchedMessages,
+    };
+    setConversations((prev) => [newConv, ...prev]);
+    upsertConversation('strategy', newConv);
+    setActiveConversationId(newConv.id);
+  };
+
+  const handleRefreshMessage = async (msg: ChatMessageType) => {
+    if (isLoading) return;
+    const conv = conversations.find((c) => c.id === activeConversationId);
+    if (!conv) return;
+    const msgIndex = conv.messages.findIndex((m) => m.id === msg.id);
+    if (msgIndex < 1) return;
+    const priorUserMsg = conv.messages[msgIndex - 1];
+    if (!priorUserMsg || priorUserMsg.role !== 'user') return;
+
+    const trimmed = conv.messages.slice(0, msgIndex);
+    const convId = activeConversationId!;
+
+    setConversations((prev) => {
+      const updated = prev.map((c) =>
+        c.id === convId ? { ...c, messages: trimmed, timestamp: Date.now() } : c
+      );
+      const updatedConv = updated.find((c) => c.id === convId);
+      if (updatedConv) upsertConversation('strategy', updatedConv);
+      return updated;
+    });
+
+    setIsLoading(true);
+
+    try {
+      const historyMessages = trimmed
+        .filter((m) => m.role === 'user' || m.role === 'assistant')
+        .map((m) => ({ role: m.role, content: m.content }));
+
+      const rawResponse = await sendChatMessage(historyMessages, role);
+      const assistantMessage = { ...buildAssistantMessage(rawResponse, priorUserMsg.content, role), isTyping: true };
+
+      setConversations((prev) => {
+        const updated = prev.map((c) =>
+          c.id === convId ? { ...c, messages: [...c.messages, assistantMessage], timestamp: Date.now() } : c
+        );
+        const updatedConv = updated.find((c) => c.id === convId);
+        if (updatedConv) upsertConversation('strategy', updatedConv);
+        return updated;
+      });
+
+      if (assistantMessage.audit) {
+        setAuditRecords((prev) => [assistantMessage.audit!, ...prev].slice(0, 30));
+      }
+    } catch (error) {
+      const errorMessage: ChatMessageType = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: `**Error:** Unable to reach the server. ${error instanceof Error ? error.message : 'Please try again.'}`,
+      };
+      setConversations((prev) => {
+        const updated = prev.map((c) =>
+          c.id === convId ? { ...c, messages: [...c.messages, errorMessage], timestamp: Date.now() } : c
+        );
+        const updatedConv = updated.find((c) => c.id === convId);
+        if (updatedConv) upsertConversation('strategy', updatedConv);
+        return updated;
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleTypingComplete = useCallback((messageId: string) => {
+    setConversations((prev) => {
+      let changed = false;
+      const updated = prev.map((c) => {
+        if (!c.messages.some((m) => m.id === messageId && m.isTyping)) return c;
+        changed = true;
+        const nextMessages = c.messages.map((m) =>
+          m.id === messageId ? { ...m, isTyping: false } : m
+        );
+        const nextConv = { ...c, messages: nextMessages };
+        upsertConversation('strategy', nextConv);
+        return nextConv;
+      });
+      return changed ? updated : prev;
+    });
+  }, []);
+
   const handleExport = () => {
     setScreen('export');
   };
@@ -308,6 +404,9 @@ function App() {
         isLoading={isLoading}
         conversationTitle={activeConversation?.title}
         onViewRecommendation={handleViewRecommendation}
+        onRefreshMessage={handleRefreshMessage}
+        onBranchMessage={handleBranchMessage}
+        onTypingComplete={handleTypingComplete}
         evidenceOpen={evidenceOpen}
         onToggleEvidence={() => setEvidenceOpen((o) => !o)}
       />

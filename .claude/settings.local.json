@@ -20,7 +20,11 @@
       "Read(//c/Users/physt/**)",
       "Read(//c/Users/physt/.vercel/**)",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\physt\\\\OneDrive\\\\Desktop\\\\Class Files\\\\CS360\\\\Final Project\" -Recurse -Force -ErrorAction SilentlyContinue)",
-      "Bash(Select-Object -ExpandProperty FullName)"
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\physt\\\\OneDrive\\\\Desktop\\\\Class Files\\\\CS360\\\\Final Project\" -Recurse -Directory)",
+      "Bash(Select-Object -First 20)",
+      "Bash(Format-Table FullName)",
+      "Bash(echo \"exit=$?\")"
     ]
   }
 }

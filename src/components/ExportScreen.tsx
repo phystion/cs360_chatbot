@@ -14,6 +14,18 @@ export function ExportScreen({ message, role, onBack }: Props) {
     return message.audit?.question || lines[0] || 'N/A';
   })();
 
+  const cleanContent = message.content.replace(/\*\*/g, '');
+
+  const handleDownloadPdf = () => {
+    document.body.classList.add('is-printing-export');
+    const cleanup = () => {
+      document.body.classList.remove('is-printing-export');
+      window.removeEventListener('afterprint', cleanup);
+    };
+    window.addEventListener('afterprint', cleanup);
+    window.print();
+  };
+
   const handleDownloadText = () => {
     const text = [
       'PHARMORA SIGNAL — DECISION SUMMARY REPORT',
@@ -23,7 +35,7 @@ export function ExportScreen({ message, role, onBack }: Props) {
       `QUERY: ${userQuery}`,
       '',
       `AI RECOMMENDATION:`,
-      message.content.replace(/\*\*/g, ''),
+      cleanContent,
       '',
       `CONFIDENCE LEVEL: ${confidence}%`,
       '',
@@ -36,23 +48,51 @@ export function ExportScreen({ message, role, onBack }: Props) {
       '',
       'AUDIT TRAIL:',
       message.audit ? `  ID: ${message.audit.id}` : '',
+      message.audit ? `  Role: ${message.audit.role}` : '',
       message.audit ? `  Risk Level: ${message.audit.riskLevel}` : '',
-      message.audit ? `  Review: ${message.audit.reviewStatus}` : '',
       message.audit ? `  Timestamp: ${message.audit.timestamp}` : '',
-    ].join('\n');
+    ]
+      .filter(Boolean)
+      .join('\n');
 
-    const blob = new Blob([text], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `pharmora-summary-${Date.now()}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(text, 'text/plain', 'txt');
+  };
+
+  const handleDownloadCsv = () => {
+    const rows: string[][] = [
+      ['Field', 'Value'],
+      ['Generated', new Date().toISOString()],
+      ['Department', role],
+      ['Query', userQuery],
+      ['Confidence', `${confidence}%`],
+      ['Recommendation', cleanContent],
+    ];
+
+    if (message.audit) {
+      rows.push(['Query ID', message.audit.id]);
+      rows.push(['Risk Level', message.audit.riskLevel]);
+      rows.push(['Timestamp', message.audit.timestamp]);
+    }
+
+    if (message.evidence) {
+      for (const [key, value] of Object.entries(message.evidence.details)) {
+        rows.push([
+          `Source: ${key}`,
+          Array.isArray(value) ? value.join('; ') : String(value),
+        ]);
+      }
+    }
+
+    const csv = rows
+      .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+
+    downloadBlob(csv, 'text/csv', 'csv');
   };
 
   return (
     <div className="export-screen">
-      <div className="export-header">
+      <div className="export-header export-no-print">
         <button className="rec-back-btn" onClick={onBack}>Back</button>
         <h2>Export Decision Summary</h2>
       </div>
@@ -89,7 +129,7 @@ export function ExportScreen({ message, role, onBack }: Props) {
             <div className="export-field">
               <span className="export-field-label">AI Recommendation</span>
               <div className="export-field-value">
-                {message.content.replace(/\*\*/g, '')}
+                {cleanContent}
               </div>
             </div>
 
@@ -139,7 +179,7 @@ export function ExportScreen({ message, role, onBack }: Props) {
                   </div>
                   <div className="export-audit-item">
                     <CheckCircle size={12} />
-                    <span>Review: {message.audit.reviewStatus}</span>
+                    <span>Role: {message.audit.role}</span>
                   </div>
                 </div>
               </div>
@@ -147,13 +187,13 @@ export function ExportScreen({ message, role, onBack }: Props) {
           </div>
         </div>
 
-        <div className="export-actions-panel">
+        <div className="export-actions-panel export-no-print">
           <h4>Download Format</h4>
-          <button className="export-download-btn export-download-primary" onClick={handleDownloadText}>
+          <button className="export-download-btn export-download-primary" onClick={handleDownloadPdf}>
             <FileText size={16} />
             <div>
               <span className="export-btn-title">Download as PDF</span>
-              <span className="export-btn-desc">Formatted report with branding</span>
+              <span className="export-btn-desc">Print dialog — choose "Save as PDF"</span>
             </div>
           </button>
           <button className="export-download-btn" onClick={handleDownloadText}>
@@ -163,7 +203,7 @@ export function ExportScreen({ message, role, onBack }: Props) {
               <span className="export-btn-desc">Plain text summary</span>
             </div>
           </button>
-          <button className="export-download-btn" onClick={handleDownloadText}>
+          <button className="export-download-btn" onClick={handleDownloadCsv}>
             <Download size={16} />
             <div>
               <span className="export-btn-title">Download as CSV</span>
@@ -183,4 +223,14 @@ export function ExportScreen({ message, role, onBack }: Props) {
       </div>
     </div>
   );
+}
+
+function downloadBlob(content: string, mime: string, extension: string) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `pharmora-summary-${Date.now()}.${extension}`;
+  a.click();
+  URL.revokeObjectURL(url);
 }

@@ -120,7 +120,14 @@ export function Sidebar({
         ) : (
           <>
             <div className="sidebar-brand">
-              <PharmoraLogo size={36} />
+              <button
+                className="sidebar-logo-btn"
+                onClick={onNewConversation}
+                title="New conversation"
+                aria-label="New conversation"
+              >
+                <PharmoraLogo size={36} />
+              </button>
               <div className="sidebar-brand-text">
                 <h1 className="brand-title">Pharmora Co-Assist</h1>
               </div>

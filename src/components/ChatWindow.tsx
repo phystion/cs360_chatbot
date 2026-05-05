@@ -13,6 +13,11 @@ import {
   UserPlus,
   Mail,
   X,
+  Copy,
+  Check,
+  RotateCcw,
+  GitBranch,
+  Lightbulb,
   LucideProps,
 } from 'lucide-react';
 import { ChatMessage as ChatMessageType, Role } from '../types';
@@ -42,6 +47,9 @@ interface Props {
   isLoading: boolean;
   conversationTitle?: string;
   onViewRecommendation?: (msg: ChatMessageType) => void;
+  onRefreshMessage?: (msg: ChatMessageType) => void;
+  onBranchMessage?: (msg: ChatMessageType) => void;
+  onTypingComplete?: (messageId: string) => void;
   evidenceOpen?: boolean;
   onToggleEvidence?: () => void;
 }
@@ -55,10 +63,14 @@ export function ChatWindow({
   isLoading,
   conversationTitle,
   onViewRecommendation,
+  onRefreshMessage,
+  onBranchMessage,
+  onTypingComplete,
   evidenceOpen,
   onToggleEvidence,
 }: Props) {
   const [input, setInput] = useState('');
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const [shareEmail, setShareEmail] = useState('');
   const [shareNote, setShareNote] = useState('');
@@ -78,6 +90,12 @@ export function ChatWindow({
     if (!input.trim() || isLoading) return;
     onSend(input.trim());
     setInput('');
+  };
+
+  const handleCopy = (msg: ChatMessageType) => {
+    navigator.clipboard.writeText(msg.content);
+    setCopiedId(msg.id);
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
   const closeShare = () => {
@@ -162,12 +180,44 @@ export function ChatWindow({
 
         {messages.map((msg) => (
           <div key={msg.id}>
-            <ChatMessage message={msg} />
-            {msg.role === 'assistant' && onViewRecommendation && !msg.content.startsWith('**Error') && !msg.content.startsWith('Now answering') && (
+            <ChatMessage message={msg} onTypingComplete={onTypingComplete} />
+            {msg.role === 'assistant' && !msg.isTyping && !msg.content.startsWith('**Error') && !msg.content.startsWith('Now answering') && (
               <div className="msg-actions">
-                <button className="msg-view-rec-btn" onClick={() => onViewRecommendation(msg)}>
-                  View Full Recommendation
+                <button
+                  className={`msg-action-btn${copiedId === msg.id ? ' msg-action-btn-copied' : ''}`}
+                  onClick={() => handleCopy(msg)}
+                  title="Copy response"
+                >
+                  {copiedId === msg.id ? <Check size={13} /> : <Copy size={13} />}
                 </button>
+                {onRefreshMessage && (
+                  <button
+                    className="msg-action-btn"
+                    onClick={() => onRefreshMessage(msg)}
+                    title="Regenerate response"
+                    disabled={isLoading}
+                  >
+                    <RotateCcw size={13} />
+                  </button>
+                )}
+                {onBranchMessage && (
+                  <button
+                    className="msg-action-btn"
+                    onClick={() => onBranchMessage(msg)}
+                    title="Branch to new chat"
+                  >
+                    <GitBranch size={13} />
+                  </button>
+                )}
+                {onViewRecommendation && (
+                  <button
+                    className="msg-action-btn msg-action-btn-rec"
+                    onClick={() => onViewRecommendation(msg)}
+                    title="View recommendation"
+                  >
+                    <Lightbulb size={13} />
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -175,7 +225,7 @@ export function ChatWindow({
 
         {isLoading && (
           <div className="chat-msg chat-msg-assistant">
-            <div className="msg-bubble msg-assistant-bubble loading-bubble">
+            <div className="loading-indicator">
               <div className="loading-dots">
                 <span></span><span></span><span></span>
               </div>

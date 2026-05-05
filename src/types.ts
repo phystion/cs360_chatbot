@@ -45,6 +45,7 @@ export interface ChatMessage {
   content: string;
   evidence?: EvidenceData;
   audit?: AuditRecord;
+  isTyping?: boolean;
 }
 
 export interface StructuredResponse {

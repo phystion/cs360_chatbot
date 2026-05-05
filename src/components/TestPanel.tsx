@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Briefcase, FlaskConical, DollarSign, Megaphone, ShieldCheck, Server, RotateCcw, GripVertical, Minus, Plus, Eye, LucideProps } from 'lucide-react';
+import { Briefcase, FlaskConical, DollarSign, Megaphone, ShieldCheck, Server, RotateCcw, GripVertical, Minus, Plus, Eye, ChevronsRight, ChevronRight, LucideProps } from 'lucide-react';
 import { Role } from '../types';
 import { roleConfigs } from '../data/roleConfig';
 
@@ -60,6 +60,7 @@ function clamp(pos: Position, height: number): Position {
 
 export function TestPanel({ activeRole, signedInRole, onChange }: Props) {
   const [open, setOpen] = useState(true);
+  const [hidden, setHidden] = useState(false);
   const [pos, setPos] = useState<Position>(getInitialPosition);
   const dragState = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null);
   const isTesting = activeRole !== signedInRole;
@@ -106,6 +107,20 @@ export function TestPanel({ activeRole, signedInRole, onChange }: Props) {
     }
   }, []);
 
+  if (hidden) {
+    const tabTop = Math.max(60, Math.min(pos.y + 10, window.innerHeight - 100));
+    return (
+      <button
+        className="floating-test-tab"
+        style={{ top: tabTop }}
+        onClick={() => setHidden(false)}
+        aria-label="Show View as panel"
+      >
+        <ChevronRight size={14} />
+      </button>
+    );
+  }
+
   return (
     <div
       className={`floating-test-panel ${open ? 'is-open' : 'is-closed'}`}
@@ -120,7 +135,10 @@ export function TestPanel({ activeRole, signedInRole, onChange }: Props) {
       >
         <GripVertical size={14} className="floating-test-grip" />
         <Eye size={13} />
-        <span className="floating-test-title">View as</span>
+        <div className="floating-test-title">
+          <span className="floating-test-title-main">View as</span>
+          <span className="floating-test-prod-badge">production only</span>
+        </div>
         <button
           className="floating-test-collapse"
           data-no-drag
@@ -128,6 +146,15 @@ export function TestPanel({ activeRole, signedInRole, onChange }: Props) {
           aria-label={open ? 'Collapse' : 'Expand'}
         >
           {open ? <Minus size={12} /> : <Plus size={12} />}
+        </button>
+        <button
+          className="floating-test-dismiss"
+          data-no-drag
+          onClick={() => setHidden(true)}
+          aria-label="Hide panel"
+          title="Hide panel to side"
+        >
+          <ChevronsRight size={12} />
         </button>
       </div>
 
