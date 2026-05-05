@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ShieldCheck, Lock, User, Building2, AlertTriangle } from 'lucide-react';
 import { Role } from '../types';
 import { PharmoraLogo } from './PharmoraLogo';
+import { TEST_USER_EMAIL, normalizeEmail } from '../lib/shareStore';
 
 interface Props {
   onLogin: (role: Role, username: string) => void;
@@ -33,8 +34,8 @@ export function LoginScreen({ onLogin }: Props) {
       return;
     }
 
-    if (username === 'test' && password === 'test') {
-      onLogin(DEPARTMENT_ROLES[department], 'Test User');
+    if (normalizeEmail(username) === TEST_USER_EMAIL && password === 'test') {
+      onLogin(DEPARTMENT_ROLES[department], TEST_USER_EMAIL);
     } else {
       const newAttempts = attempts + 1;
       setAttempts(newAttempts);
@@ -66,7 +67,7 @@ export function LoginScreen({ onLogin }: Props) {
 
         <form className="login-form" onSubmit={handleSubmit}>
           <div className="login-test-creds-banner">
-            <strong>Test credentials:</strong> Username <code>test</code> · Password <code>test</code>
+            <strong>Test credentials:</strong> Email <code>{TEST_USER_EMAIL}</code> · Password <code>test</code>
           </div>
 
           <div className="login-field">
@@ -93,12 +94,12 @@ export function LoginScreen({ onLogin }: Props) {
           <div className="login-field">
             <label className="login-label">
               <User size={14} />
-              Username
+              Email
             </label>
             <input
-              type="text"
+              type="email"
               className="login-input"
-              placeholder="Enter your username"
+              placeholder="Enter your email"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               disabled={locked}

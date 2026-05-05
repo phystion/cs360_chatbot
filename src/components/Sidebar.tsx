@@ -11,7 +11,6 @@ import { Role } from '../types';
 import { StoredConversation } from '../lib/conversationStore';
 import { UserProfile } from './UserProfile';
 import { SavedConversations } from './SavedConversations';
-import { SystemGuardrails } from './SystemGuardrails';
 import { PharmoraLogo } from './PharmoraLogo';
 
 interface Props {
@@ -25,6 +24,7 @@ interface Props {
   onNewConversation: () => void;
   onDeleteConversation: (id: string) => void;
   onRenameConversation: (id: string, title: string) => void;
+  onReorderConversations: (fromId: string, toId: string) => void;
   onLogout?: () => void;
 }
 
@@ -39,18 +39,15 @@ export function Sidebar({
   onNewConversation,
   onDeleteConversation,
   onRenameConversation,
+  onReorderConversations,
   onLogout,
 }: Props) {
   const expand = () => {
     if (collapsed) onToggleCollapsed();
   };
 
-  const togglePanelAndNewChat = () => {
-    onToggleCollapsed();
-    onNewConversation();
-  };
-
-  const displayName = username ? username.charAt(0).toUpperCase() + username.slice(1) : 'User';
+  const accountName = username.includes('@') ? username.split('@')[0] : username;
+  const displayName = accountName ? accountName.charAt(0).toUpperCase() + accountName.slice(1) : 'User';
 
   return (
     <div className={`sidebar-wrapper ${collapsed ? 'is-collapsed' : ''}`}>
@@ -59,9 +56,9 @@ export function Sidebar({
           <div className="sidebar-rail">
             <button
               className="sidebar-rail-btn sidebar-rail-btn-brand"
-              onClick={togglePanelAndNewChat}
-              title="Open sidebar & start new chat"
-              aria-label="Open sidebar and start new chat"
+              onClick={onToggleCollapsed}
+              title="Open sidebar"
+              aria-label="Open sidebar"
             >
               <PanelLeftOpen size={20} />
             </button>
@@ -130,9 +127,9 @@ export function Sidebar({
               <div className="sidebar-brand-actions">
                 <button
                   className="sidebar-brand-icon"
-                  onClick={togglePanelAndNewChat}
-                  title="Close sidebar & start new chat"
-                  aria-label="Close sidebar and start new chat"
+                  onClick={onToggleCollapsed}
+                  title="Close sidebar"
+                  aria-label="Close sidebar"
                 >
                   <PanelLeftClose size={17} />
                 </button>
@@ -146,9 +143,8 @@ export function Sidebar({
               onNew={onNewConversation}
               onDelete={onDeleteConversation}
               onRename={onRenameConversation}
+              onReorder={onReorderConversations}
             />
-
-            <SystemGuardrails />
 
             <div className="sidebar-account">
               <UserProfile

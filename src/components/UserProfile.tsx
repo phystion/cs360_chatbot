@@ -36,7 +36,9 @@ export function UserProfile({ username, signedInRole, onLogout }: Props) {
   const [expanded, setExpanded] = useState(false);
   const config = getRoleConfig(signedInRole);
   const Icon = iconMap[config.icon];
-  const displayName = username ? username.charAt(0).toUpperCase() + username.slice(1) : 'User';
+  const userEmail = username.includes('@') ? username : `${username || 'user'}@pharmora.local`;
+  const accountName = username.includes('@') ? username.split('@')[0] : username;
+  const displayName = accountName ? accountName.charAt(0).toUpperCase() + accountName.slice(1) : 'User';
   const initials = displayName.slice(0, 1).toUpperCase();
 
   return (
@@ -64,7 +66,7 @@ export function UserProfile({ username, signedInRole, onLogout }: Props) {
         <div className="user-profile-details">
           <div className="user-profile-detail-row">
             <Mail size={12} />
-            <span>{username || 'user'}@pharmora.local</span>
+            <span>{userEmail}</span>
           </div>
           <div className="user-profile-detail-row">
             <Icon size={12} />

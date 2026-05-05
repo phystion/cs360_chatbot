@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { Pencil, Check, X, SquarePen, Search, MessageSquareText } from 'lucide-react';
+import { Pencil, Check, X, SquarePen, Search, MessageSquareText, GripVertical } from 'lucide-react';
 import { StoredConversation } from '../lib/conversationStore';
 
 interface Props {
@@ -9,6 +9,7 @@ interface Props {
   onNew: () => void;
   onDelete: (id: string) => void;
   onRename: (id: string, title: string) => void;
+  onReorder: (fromId: string, toId: string) => void;
 }
 
 function formatTime(ts: number): string {
@@ -20,11 +21,13 @@ function formatTime(ts: number): string {
   return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
 }
 
-export function SavedConversations({ conversations, activeId, onSelect, onNew, onDelete, onRename }: Props) {
+export function SavedConversations({ conversations, activeId, onSelect, onNew, onDelete, onRename, onReorder }: Props) {
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -111,72 +114,110 @@ export function SavedConversations({ conversations, activeId, onSelect, onNew, o
         {conversations.length === 0 && (
           <p className="no-conversations">No conversations yet.</p>
         )}
-        {conversations.map((conv) => (
-          <div
-            key={conv.id}
-            className={`conversation-item ${conv.id === activeId ? 'active' : ''}`}
-            onClick={() => renamingId !== conv.id && onSelect(conv.id)}
-          >
-            {renamingId === conv.id ? (
-              <div className="conversation-rename" onClick={(e) => e.stopPropagation()}>
-                <input
-                  ref={inputRef}
-                  className="conversation-rename-input"
-                  value={renameValue}
-                  onChange={(e) => setRenameValue(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') commitRename(conv.id);
-                    if (e.key === 'Escape') cancelRename();
-                  }}
-                  onBlur={() => commitRename(conv.id)}
-                  maxLength={60}
-                />
-                <button
-                  className="conversation-rename-ok"
-                  onMouseDown={(e) => { e.preventDefault(); commitRename(conv.id); }}
-                  title="Save"
-                  aria-label="Save rename"
-                >
-                  <Check size={11} />
-                </button>
-                <button
-                  className="conversation-rename-cancel"
-                  onMouseDown={(e) => { e.preventDefault(); cancelRename(); }}
-                  title="Cancel"
-                  aria-label="Cancel rename"
-                >
-                  <X size={11} />
-                </button>
-              </div>
-            ) : (
-              <>
-                <div className="conversation-item-content">
-                  <span className="conversation-title">{conv.title}</span>
-                  <span className="conversation-time">{formatTime(conv.timestamp)}</span>
+        {conversations.map((conv) => {
+          const isDragging = draggingId === conv.id;
+          const isDragOver = dragOverId === conv.id && draggingId && draggingId !== conv.id;
+          return (
+            <div
+              key={conv.id}
+              className={`conversation-item ${conv.id === activeId ? 'active' : ''} ${isDragging ? 'is-dragging' : ''} ${isDragOver ? 'is-drag-over' : ''}`}
+              draggable={renamingId !== conv.id}
+              onDragStart={(e) => {
+                setDraggingId(conv.id);
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', conv.id);
+              }}
+              onDragOver={(e) => {
+                if (!draggingId || draggingId === conv.id) return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                if (dragOverId !== conv.id) setDragOverId(conv.id);
+              }}
+              onDragLeave={() => {
+                if (dragOverId === conv.id) setDragOverId(null);
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                const fromId = e.dataTransfer.getData('text/plain') || draggingId;
+                if (fromId && fromId !== conv.id) onReorder(fromId, conv.id);
+                setDraggingId(null);
+                setDragOverId(null);
+              }}
+              onDragEnd={() => {
+                setDraggingId(null);
+                setDragOverId(null);
+              }}
+              onClick={() => renamingId !== conv.id && onSelect(conv.id)}
+            >
+              {renamingId === conv.id ? (
+                <div className="conversation-rename" onClick={(e) => e.stopPropagation()}>
+                  <input
+                    ref={inputRef}
+                    className="conversation-rename-input"
+                    value={renameValue}
+                    onChange={(e) => setRenameValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') commitRename(conv.id);
+                      if (e.key === 'Escape') cancelRename();
+                    }}
+                    onBlur={() => commitRename(conv.id)}
+                    maxLength={60}
+                  />
+                  <button
+                    className="conversation-rename-ok"
+                    onMouseDown={(e) => { e.preventDefault(); commitRename(conv.id); }}
+                    title="Save"
+                    aria-label="Save rename"
+                  >
+                    <Check size={11} />
+                  </button>
+                  <button
+                    className="conversation-rename-cancel"
+                    onMouseDown={(e) => { e.preventDefault(); cancelRename(); }}
+                    title="Cancel"
+                    aria-label="Cancel rename"
+                  >
+                    <X size={11} />
+                  </button>
                 </div>
-                <button
-                  className="conversation-action-btn conversation-rename-btn"
-                  onClick={(e) => startRename(conv, e)}
-                  title="Rename"
-                  aria-label="Rename conversation"
-                >
-                  <Pencil size={11} />
-                </button>
-                <button
-                  className="conversation-action-btn conversation-delete"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete(conv.id);
-                  }}
-                  title="Delete"
-                  aria-label="Delete conversation"
-                >
-                  <X size={11} />
-                </button>
-              </>
-            )}
-          </div>
-        ))}
+              ) : (
+                <>
+                  <span
+                    className="conversation-drag-handle"
+                    title="Drag to reorder"
+                    aria-label="Drag to reorder"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <GripVertical size={12} />
+                  </span>
+                  <div className="conversation-item-content">
+                    <span className="conversation-title">{conv.title}</span>
+                    <span className="conversation-time">{formatTime(conv.timestamp)}</span>
+                  </div>
+                  <button
+                    className="conversation-action-btn conversation-rename-btn"
+                    onClick={(e) => startRename(conv, e)}
+                    title="Rename"
+                    aria-label="Rename conversation"
+                  >
+                    <Pencil size={11} />
+                  </button>
+                  <button
+                    className="conversation-action-btn conversation-delete"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(conv.id);
+                    }}
+                    title="Delete"
+                    aria-label="Delete conversation"
+                  >
+                    <X size={11} />
+                  </button>
+                </>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {searchOpen && (

@@ -20,6 +20,7 @@ import { ChatMessage } from './ChatMessage';
 import { PromptButtons } from './PromptButtons';
 import { samplePrompts } from '../data/samplePrompts';
 import { getRoleConfig } from '../data/roleConfig';
+import { normalizeEmail, shareConversation } from '../lib/shareStore';
 
 type IconComponent = React.ForwardRefExoticComponent<Omit<LucideProps, 'ref'> & React.RefAttributes<SVGSVGElement>>;
 
@@ -37,6 +38,7 @@ interface Props {
   onSend: (message: string) => void;
   role: Role;
   signedInRole: Role;
+  currentUserEmail: string;
   isLoading: boolean;
   conversationTitle?: string;
   onViewRecommendation?: (msg: ChatMessageType) => void;
@@ -49,6 +51,7 @@ export function ChatWindow({
   onSend,
   role,
   signedInRole,
+  currentUserEmail,
   isLoading,
   conversationTitle,
   onViewRecommendation,
@@ -86,18 +89,16 @@ export function ChatWindow({
 
   const handleShareSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const email = shareEmail.trim();
+    const email = normalizeEmail(shareEmail);
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return;
-    const key = 'pharmora-shared-conversations';
-    const existing = JSON.parse(localStorage.getItem(key) || '[]');
-    existing.push({
-      recipient: email,
+    shareConversation({
+      recipientEmail: email,
+      senderEmail: currentUserEmail,
       title: conversationTitle || 'Untitled conversation',
       note: shareNote.trim() || null,
-      sharedAt: Date.now(),
       messages,
     });
-    localStorage.setItem(key, JSON.stringify(existing));
+    setShareEmail(email);
     setShareStatus('sent');
   };
 

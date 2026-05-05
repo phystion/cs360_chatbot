@@ -8,7 +8,19 @@
       "Bash(git init *)",
       "Bash(git branch *)",
       "Bash(git remote *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(cd:*)",
+      "Bash(npx vite *)",
+      "Bash(curl -s -o NUL -w \"%{http_code}\" http://localhost:5181)",
+      "Bash(node -e \"const l = require\\('lucide-react'\\); const keys = Object.keys\\(l\\).filter\\(k => k.toLowerCase\\(\\).includes\\('panel'\\)\\); console.log\\(keys.join\\(', '\\)\\)\")",
+      "Bash(vercel --version)",
+      "Bash(npx vercel *)",
+      "Read(//c/Users/physt/**)",
+      "Read(//c/Users/physt/.vercel/**)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\physt\\\\OneDrive\\\\Desktop\\\\Class Files\\\\CS360\\\\Final Project\" -Recurse -Force -ErrorAction SilentlyContinue)",
+      "Bash(Select-Object -ExpandProperty FullName)"
     ]
   }
 }

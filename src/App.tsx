@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { ChatMessage as ChatMessageType, Role, EvidenceData, AuditRecord } from './types';
+import { ChatMessage as ChatMessageType, Role, AuditRecord } from './types';
 import { LoginScreen } from './components/LoginScreen';
 import { Sidebar } from './components/Sidebar';
 import { ChatWindow } from './components/ChatWindow';
-import { EvidencePanel } from './components/EvidencePanel';
+import { DepartmentPanel } from './components/DepartmentPanel';
 import { RecommendationView } from './components/RecommendationView';
 import { ExportScreen } from './components/ExportScreen';
 import { TestPanel } from './components/TestPanel';
@@ -14,8 +14,10 @@ import {
   StoredConversation,
   loadConversations,
   upsertConversation,
+  saveConversations,
   deleteConversation as deleteFromStore,
 } from './lib/conversationStore';
+import { claimSharedConversations, normalizeEmail } from './lib/shareStore';
 
 type Screen = 'login' | 'chatbot' | 'recommendation' | 'export';
 
@@ -57,8 +59,7 @@ function App() {
   }, [sidebarCollapsed]);
   const [conversations, setConversations] = useState<StoredConversation[]>(() => loadConversations('strategy'));
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
-  const [currentEvidence, setCurrentEvidence] = useState<EvidenceData | null>(null);
-  const [currentAudit, setCurrentAudit] = useState<AuditRecord | null>(null);
+  const [auditRecords, setAuditRecords] = useState<AuditRecord[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [viewingMessage, setViewingMessage] = useState<ChatMessageType | null>(null);
   const [evidenceOpen, setEvidenceOpen] = useState(true);
@@ -93,25 +94,31 @@ function App() {
   }, [role]);
 
   const handleLogin = (selectedRole: Role, signedInUsername: string) => {
+    const normalizedUsername = normalizeEmail(signedInUsername);
     setRole(selectedRole);
     setSignedInRole(selectedRole);
-    setUsername(signedInUsername);
+    setUsername(normalizedUsername);
     localStorage.setItem('pharmora-signal-signed-in-role', selectedRole);
-    localStorage.setItem('pharmora-signal-username', signedInUsername);
+    localStorage.setItem('pharmora-signal-username', normalizedUsername);
+
+    const sharedConversations = claimSharedConversations(normalizedUsername);
+    if (sharedConversations.length > 0) {
+      setConversations((prev) => {
+        const existingIds = new Set(prev.map((conversation) => conversation.id));
+        const next = [
+          ...sharedConversations.filter((conversation) => !existingIds.has(conversation.id)),
+          ...prev,
+        ].slice(0, 20);
+        saveConversations(next);
+        return next;
+      });
+    }
+
     setScreen('chatbot');
   };
 
   const handleNewConversation = useCallback(() => {
-    const newConv: StoredConversation = {
-      id: crypto.randomUUID(),
-      title: 'New conversation',
-      timestamp: Date.now(),
-      messages: [],
-    };
-    setConversations((prev) => [newConv, ...prev]);
-    setActiveConversationId(newConv.id);
-    setCurrentEvidence(null);
-    setCurrentAudit(null);
+    setActiveConversationId(null);
   }, []);
 
   const handleSend = async (content: string) => {
@@ -167,8 +174,9 @@ function App() {
         return updated;
       });
 
-      setCurrentEvidence(assistantMessage.evidence || null);
-      setCurrentAudit(assistantMessage.audit || null);
+      if (assistantMessage.audit) {
+        setAuditRecords((prev) => [assistantMessage.audit!, ...prev].slice(0, 30));
+      }
     } catch (error) {
       const errorMessage: ChatMessageType = {
         id: crypto.randomUUID(),
@@ -191,10 +199,6 @@ function App() {
 
   const handleSelectConversation = (id: string) => {
     setActiveConversationId(id);
-    const conv = conversations.find((c) => c.id === id);
-    const lastAssistant = conv?.messages.filter((m) => m.role === 'assistant').pop();
-    setCurrentEvidence(lastAssistant?.evidence || null);
-    setCurrentAudit(lastAssistant?.audit || null);
   };
 
   const handleDeleteConversation = (id: string) => {
@@ -202,8 +206,6 @@ function App() {
     setConversations((prev) => prev.filter((c) => c.id !== id));
     if (activeConversationId === id) {
       setActiveConversationId(null);
-      setCurrentEvidence(null);
-      setCurrentAudit(null);
     }
   };
 
@@ -213,6 +215,20 @@ function App() {
       const conv = updated.find((c) => c.id === id);
       if (conv) upsertConversation('strategy', conv);
       return updated;
+    });
+  };
+
+  const handleReorderConversations = (fromId: string, toId: string) => {
+    if (fromId === toId) return;
+    setConversations((prev) => {
+      const fromIdx = prev.findIndex((c) => c.id === fromId);
+      const toIdx = prev.findIndex((c) => c.id === toId);
+      if (fromIdx === -1 || toIdx === -1) return prev;
+      const next = [...prev];
+      const [moved] = next.splice(fromIdx, 1);
+      next.splice(toIdx, 0, moved);
+      saveConversations(next);
+      return next;
     });
   };
 
@@ -237,8 +253,6 @@ function App() {
   const handleLogout = () => {
     setScreen('login');
     setActiveConversationId(null);
-    setCurrentEvidence(null);
-    setCurrentAudit(null);
     setViewingMessage(null);
     setUsername('');
     localStorage.removeItem('pharmora-signal-username');
@@ -282,6 +296,7 @@ function App() {
         onNewConversation={handleNewConversation}
         onDeleteConversation={handleDeleteConversation}
         onRenameConversation={handleRenameConversation}
+        onReorderConversations={handleReorderConversations}
         onLogout={handleLogout}
       />
       <ChatWindow
@@ -289,13 +304,14 @@ function App() {
         onSend={handleSend}
         role={role}
         signedInRole={signedInRole}
+        currentUserEmail={username}
         isLoading={isLoading}
         conversationTitle={activeConversation?.title}
         onViewRecommendation={handleViewRecommendation}
         evidenceOpen={evidenceOpen}
         onToggleEvidence={() => setEvidenceOpen((o) => !o)}
       />
-      <EvidencePanel evidence={currentEvidence} audit={currentAudit} open={evidenceOpen} />
+      <DepartmentPanel role={role} open={evidenceOpen} auditRecords={auditRecords} />
       <TestPanel activeRole={role} signedInRole={signedInRole} onChange={setRole} />
     </div>
   );
