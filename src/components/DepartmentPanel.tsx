@@ -563,7 +563,15 @@ function BuiltInCardPreview({ title, auditRecords }: { title: string; auditRecor
         />
       );
     case 'Governance requirements':
-      return <GovernanceRequirementsBody />;
+      return (
+        <ChecklistEditor
+          storageKey="pharmora-governance-requirements"
+          customItemsKey="pharmora-governance-requirements-custom"
+          baseItems={governanceRequirements}
+          countLabel="cleared"
+          showProgress
+        />
+      );
     case 'Live audit log':
       return <LiveAuditLogBody auditRecords={auditRecords} />;
     case 'Compliance checklist':
@@ -968,22 +976,6 @@ function CompetitorThreatBrowserBody() {
         );
       })}
     </div>
-  );
-}
-
-function GovernanceRequirementsBody() {
-  return (
-    <ul className="check-list">
-      {governanceRequirements.map((label) => (
-        <li key={label}>
-          <div className="static-check-row">
-            <input type="checkbox" checked readOnly aria-label={label} />
-            <span className="static-check-icon"><Check size={11} /></span>
-            <span>{label}</span>
-          </div>
-        </li>
-      ))}
-    </ul>
   );
 }
 
@@ -1833,19 +1825,13 @@ function ComplianceTools({ auditRecords }: { auditRecords: AuditRecord[] }) {
   return (
     <>
       <ToolCard title="Governance requirements" subtitle="Must-have controls from the SRD">
-        <ul className="check-list">
-          {governanceRequirements.map((label) => (
-            <li key={label}>
-              <div className="static-check-row">
-                <input type="checkbox" checked readOnly aria-label={label} />
-                <span className="static-check-icon">
-                  <Check size={11} />
-                </span>
-                <span>{label}</span>
-              </div>
-            </li>
-          ))}
-        </ul>
+        <ChecklistEditor
+          storageKey="pharmora-governance-requirements"
+          customItemsKey="pharmora-governance-requirements-custom"
+          baseItems={governanceRequirements}
+          countLabel="cleared"
+          showProgress
+        />
       </ToolCard>
 
       <ToolCard title="Live audit log" subtitle={`${auditRecords.length} records this session`}>
@@ -2132,6 +2118,36 @@ function MetricCard({ label, value }: { label: string; value: string }) {
   );
 }
 
+function fireConfetti(anchor: HTMLElement | null) {
+  if (!anchor || typeof document === 'undefined') return;
+  const rect = anchor.getBoundingClientRect();
+  const colors = ['#5865f2', '#22c55e', '#facc15', '#ef4444', '#06b6d4', '#a855f7', '#f97316'];
+  const container = document.createElement('div');
+  container.className = 'confetti-burst';
+  container.style.left = `${rect.left + rect.width / 2}px`;
+  container.style.top = `${rect.top + rect.height / 2}px`;
+  document.body.appendChild(container);
+
+  const COUNT = 40;
+  for (let i = 0; i < COUNT; i++) {
+    const piece = document.createElement('span');
+    piece.className = 'confetti-piece';
+    piece.style.background = colors[i % colors.length];
+    const angle = (Math.PI * 2 * i) / COUNT + Math.random() * 0.4;
+    const distance = 90 + Math.random() * 70;
+    const dx = Math.cos(angle) * distance;
+    const dy = Math.sin(angle) * distance - 30;
+    const rot = Math.random() * 720 - 360;
+    piece.style.setProperty('--dx', `${dx}px`);
+    piece.style.setProperty('--dy', `${dy}px`);
+    piece.style.setProperty('--rot', `${rot}deg`);
+    piece.style.animationDelay = `${Math.random() * 80}ms`;
+    container.appendChild(piece);
+  }
+
+  window.setTimeout(() => container.remove(), 1500);
+}
+
 function ChecklistEditor({
   storageKey,
   customItemsKey,
@@ -2149,10 +2165,25 @@ function ChecklistEditor({
   const items = useMemo(() => [...baseItems, ...customItems], [baseItems, customItems]);
   const [checked, setChecked] = useChecklist(storageKey, items, []);
   const [draft, setDraft] = useState('');
+  const progressRef = useRef<HTMLDivElement | null>(null);
+  const wasCompleteRef = useRef<boolean | null>(null);
+  const isComplete = items.length > 0 && checked.length === items.length;
 
   useEffect(() => {
     localStorage.setItem(customItemsKey, JSON.stringify(customItems));
   }, [customItems, customItemsKey]);
+
+  useEffect(() => {
+    if (!showProgress) return;
+    if (wasCompleteRef.current === null) {
+      wasCompleteRef.current = isComplete;
+      return;
+    }
+    if (isComplete && !wasCompleteRef.current) {
+      fireConfetti(progressRef.current);
+    }
+    wasCompleteRef.current = isComplete;
+  }, [isComplete, showProgress]);
 
   const addItem = () => {
     const next = draft.trim();
@@ -2198,7 +2229,7 @@ function ChecklistEditor({
       </div>
 
       {showProgress && (
-        <div className="dp-progressbar">
+        <div className="dp-progressbar" ref={progressRef}>
           <div
             className="dp-progressbar-fill"
             style={{ width: `${items.length ? (checked.length / items.length) * 100 : 0}%` }}
