@@ -7,9 +7,12 @@ import {
   ShieldCheck,
   Server,
   SendHorizontal,
-  Search,
+  Sparkles,
   PanelRightOpen,
   PanelRightClose,
+  UserPlus,
+  Mail,
+  X,
   LucideProps,
 } from 'lucide-react';
 import { ChatMessage as ChatMessageType, Role } from '../types';
@@ -53,6 +56,10 @@ export function ChatWindow({
   onToggleEvidence,
 }: Props) {
   const [input, setInput] = useState('');
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareEmail, setShareEmail] = useState('');
+  const [shareNote, setShareNote] = useState('');
+  const [shareStatus, setShareStatus] = useState<'idle' | 'sent'>('idle');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const roleConfig = getRoleConfig(role);
   const RoleIcon = iconMap[roleConfig.icon];
@@ -68,6 +75,30 @@ export function ChatWindow({
     if (!input.trim() || isLoading) return;
     onSend(input.trim());
     setInput('');
+  };
+
+  const closeShare = () => {
+    setShareOpen(false);
+    setShareEmail('');
+    setShareNote('');
+    setShareStatus('idle');
+  };
+
+  const handleShareSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const email = shareEmail.trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return;
+    const key = 'pharmora-shared-conversations';
+    const existing = JSON.parse(localStorage.getItem(key) || '[]');
+    existing.push({
+      recipient: email,
+      title: conversationTitle || 'Untitled conversation',
+      note: shareNote.trim() || null,
+      sharedAt: Date.now(),
+      messages,
+    });
+    localStorage.setItem(key, JSON.stringify(existing));
+    setShareStatus('sent');
   };
 
   const allPrompts = [...roleConfig.suggestedPrompts, ...samplePrompts];
@@ -95,6 +126,15 @@ export function ChatWindow({
         </div>
 
         <div className="chat-topbar-right">
+          <button
+            className="topbar-evidence-btn"
+            onClick={() => setShareOpen(true)}
+            disabled={isEmpty}
+            title={isEmpty ? 'Start a conversation to share' : 'Share conversation'}
+            aria-label="Share conversation"
+          >
+            <UserPlus size={16} />
+          </button>
           {onToggleEvidence && (
             <button
               className="topbar-evidence-btn"
@@ -112,10 +152,10 @@ export function ChatWindow({
         {isEmpty && (
           <div className="chat-welcome">
             <div className="chat-welcome-icon">
-              <Search size={22} />
+              <Sparkles size={22} />
             </div>
             <h2>Pharmora Co-Assist</h2>
-            <p className="welcome-role-msg">{roleConfig.welcomeMessage}</p>
+            <p className="welcome-role-msg"></p>
           </div>
         )}
 
@@ -146,44 +186,17 @@ export function ChatWindow({
         <div ref={messagesEndRef} />
       </div>
 
-      {isEmpty ? (
-        <div className="chat-empty-center">
-          <form className="chat-empty-form" onSubmit={handleSubmit}>
-            <div className="chat-input-shell">
-              <input
-                type="text"
-                className="chat-input"
-                placeholder="Ask anything to get started…"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                disabled={isLoading}
-                autoFocus
-              />
-              <button
-                type="submit"
-                className="chat-send-btn"
-                disabled={isLoading || !input.trim()}
-                aria-label="Send message"
-              >
-                <SendHorizontal size={16} />
-                <span>Send</span>
-              </button>
-            </div>
-          </form>
-          <div className="chat-empty-suggestions">
-            <PromptButtons prompts={allPrompts.slice(0, 3)} onSelect={onSend} />
-          </div>
-        </div>
-      ) : (
-        <form className="chat-input-form" onSubmit={handleSubmit}>
+      <div className={`chat-input-bar${isEmpty ? ' chat-input-bar-empty' : ''}`}>
+        <form className="chat-bar-form" onSubmit={handleSubmit}>
           <div className="chat-input-shell">
             <input
               type="text"
               className="chat-input"
-              placeholder="Ask Pharmora Copilot a strategic question..."
+              placeholder={isEmpty ? 'Ask anything to get started…' : 'Message Pharmora Co-Assist'}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               disabled={isLoading}
+              autoFocus={isEmpty}
             />
             <button
               type="submit"
@@ -196,6 +209,80 @@ export function ChatWindow({
             </button>
           </div>
         </form>
+        {isEmpty && (
+          <div className="chat-empty-suggestions">
+            <PromptButtons prompts={allPrompts.slice(0, 3)} onSelect={onSend} />
+          </div>
+        )}
+      </div>
+
+      {shareOpen && (
+        <div className="share-modal-overlay" onClick={closeShare}>
+          <div className="share-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="share-modal-header">
+              <div className="share-modal-title">
+                <UserPlus size={16} />
+                <span>Share conversation</span>
+              </div>
+              <button
+                className="share-modal-close"
+                onClick={closeShare}
+                aria-label="Close"
+              >
+                <X size={14} />
+              </button>
+            </div>
+
+            {shareStatus === 'sent' ? (
+              <div className="share-modal-body share-modal-success">
+                <p>
+                  Conversation shared with <strong>{shareEmail}</strong>.
+                </p>
+                <p className="share-modal-hint">
+                  They'll see it in their Conversations panel after signing in.
+                </p>
+                <button className="share-modal-submit" onClick={closeShare}>Done</button>
+              </div>
+            ) : (
+              <form className="share-modal-body" onSubmit={handleShareSubmit}>
+                <p className="share-modal-hint">
+                  Send this conversation to another internal user. They'll need to sign in to view it.
+                </p>
+                <label className="share-modal-label">
+                  <Mail size={13} />
+                  <span>Recipient email</span>
+                </label>
+                <input
+                  type="email"
+                  className="share-modal-input"
+                  placeholder="colleague@pharmora.com"
+                  value={shareEmail}
+                  onChange={(e) => setShareEmail(e.target.value)}
+                  required
+                  autoFocus
+                />
+                <label className="share-modal-label">
+                  <span>Note (optional)</span>
+                </label>
+                <textarea
+                  className="share-modal-textarea"
+                  placeholder="Add a quick message…"
+                  value={shareNote}
+                  onChange={(e) => setShareNote(e.target.value)}
+                  rows={3}
+                />
+                <div className="share-modal-actions">
+                  <button type="button" className="share-modal-cancel" onClick={closeShare}>
+                    Cancel
+                  </button>
+                  <button type="submit" className="share-modal-submit" disabled={!shareEmail.trim()}>
+                    Share
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
       )}
     </main>
   );

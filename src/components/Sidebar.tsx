@@ -4,6 +4,8 @@ import {
   Plus,
   ShieldCheck,
   UserCircle2,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from 'lucide-react';
 import { Role } from '../types';
 import { StoredConversation } from '../lib/conversationStore';
@@ -43,6 +45,11 @@ export function Sidebar({
     if (collapsed) onToggleCollapsed();
   };
 
+  const togglePanelAndNewChat = () => {
+    onToggleCollapsed();
+    onNewConversation();
+  };
+
   const displayName = username ? username.charAt(0).toUpperCase() + username.slice(1) : 'User';
 
   return (
@@ -52,11 +59,11 @@ export function Sidebar({
           <div className="sidebar-rail">
             <button
               className="sidebar-rail-btn sidebar-rail-btn-brand"
-              onClick={onToggleCollapsed}
-              title="Expand sidebar"
-              aria-label="Expand sidebar"
+              onClick={togglePanelAndNewChat}
+              title="Open sidebar & start new chat"
+              aria-label="Open sidebar and start new chat"
             >
-              <PharmoraLogo size={28} />
+              <PanelLeftOpen size={20} />
             </button>
 
             <div className="sidebar-rail-divider" />
@@ -115,18 +122,22 @@ export function Sidebar({
           </div>
         ) : (
           <>
-            <button
-              className="sidebar-brand sidebar-brand-button"
-              onClick={onToggleCollapsed}
-              title="Collapse sidebar"
-              aria-label="Collapse sidebar"
-            >
+            <div className="sidebar-brand">
               <PharmoraLogo size={36} />
               <div className="sidebar-brand-text">
                 <h1 className="brand-title">Pharmora Co-Assist</h1>
-                <p className="brand-subtitle">Cardiometabolic Strategy &amp; Pipeline</p>
               </div>
-            </button>
+              <div className="sidebar-brand-actions">
+                <button
+                  className="sidebar-brand-icon"
+                  onClick={togglePanelAndNewChat}
+                  title="Close sidebar & start new chat"
+                  aria-label="Close sidebar and start new chat"
+                >
+                  <PanelLeftClose size={17} />
+                </button>
+              </div>
+            </div>
 
             <SavedConversations
               conversations={conversations}

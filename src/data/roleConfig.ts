@@ -19,9 +19,9 @@ export const roleConfigs: RoleConfig[] = [
     description: 'Strategy, growth & prioritization',
     welcomeMessage: 'Welcome, Executive. Pharmora Signal is ready to support portfolio prioritization, market positioning, and growth strategy decisions.',
     suggestedPrompts: [
-      'What should be our top strategic priority this quarter?',
-      'How do we balance cardiovascular revenue with diversification?',
-      'Give me an executive summary of our pipeline risk profile.',
+      'Top strategic priority',
+      'Portfolio risk summary',
+      'Revenue diversification',
     ],
   },
   {
@@ -32,9 +32,9 @@ export const roleConfigs: RoleConfig[] = [
     description: 'Pipeline, trials & development risk',
     welcomeMessage: 'Welcome, R&D. Pharmora Signal can help with pipeline analysis, clinical trial design, endpoint selection, and development risk assessment.',
     suggestedPrompts: [
-      'What are the evidence gaps for our Phase 2 endocrinology assets?',
-      'Suggest an adaptive trial design for PH-EN-202.',
-      'What development risks should we flag for the next portfolio review?',
+      'Phase 2 evidence gaps',
+      'Adaptive trial design',
+      'Pipeline development risks',
     ],
   },
   {
@@ -45,9 +45,9 @@ export const roleConfigs: RoleConfig[] = [
     description: 'ROI, allocation & pricing risk',
     welcomeMessage: 'Welcome, Finance. Pharmora Signal can assist with R&D allocation modeling, risk-adjusted opportunity analysis, and payer pricing scenarios.',
     suggestedPrompts: [
-      'What is the risk-adjusted ROI across our pipeline?',
-      'How should we allocate R&D budget between CV and endocrinology?',
-      'What pricing risks should we model for Phase 3 launches?',
+      'Risk-adjusted ROI',
+      'R&D budget allocation',
+      'Phase 3 pricing risks',
     ],
   },
   {
@@ -58,9 +58,9 @@ export const roleConfigs: RoleConfig[] = [
     description: 'Positioning, access & competition',
     welcomeMessage: 'Welcome, Marketing. Pharmora Signal can help with competitive positioning, prescriber strategy, and market access messaging.',
     suggestedPrompts: [
-      'How should we position Pharmora against Firenza in obesity?',
-      'What messaging differentiates us from Cardiva?',
-      'Which prescriber segments should we target for PH-CV-301 launch?',
+      'Competitor positioning',
+      'Key differentiators',
+      'Target prescriber segments',
     ],
   },
   {
@@ -71,9 +71,9 @@ export const roleConfigs: RoleConfig[] = [
     description: 'Compliance, audit & AI guardrails',
     welcomeMessage: 'Welcome, Regulatory/Compliance. Pharmora Signal provides full traceability, audit trails, and compliance risk assessment for all AI-generated recommendations.',
     suggestedPrompts: [
-      'What compliance risks exist with AI-generated recommendations?',
-      'Show me the audit trail for recent recommendations.',
-      'What governance framework do we need before scaling this system?',
+      'AI compliance risks',
+      'Recent audit trail',
+      'Governance framework',
     ],
   },
   {
@@ -84,9 +84,9 @@ export const roleConfigs: RoleConfig[] = [
     description: 'Data, access control & security',
     welcomeMessage: 'Welcome, IT. Pharmora Signal can assist with data source validation, access control planning, and system integration requirements.',
     suggestedPrompts: [
-      'What data sources feed into pipeline scoring?',
-      'What access controls should we implement for this system?',
-      'How should we integrate Pharmora Signal with existing workflows?',
+      'Pipeline data sources',
+      'Access control setup',
+      'System integration',
     ],
   },
 ];

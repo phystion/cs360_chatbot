@@ -173,7 +173,7 @@ function App() {
       const errorMessage: ChatMessageType = {
         id: crypto.randomUUID(),
         role: 'assistant',
-        content: `**Error:** Unable to reach Pharmora Copilot API. Please ensure the server is running. ${error instanceof Error ? error.message : ''}`,
+        content: `**Error:** Unable to reach the server. ${error instanceof Error ? error.message : 'Please try again.'}`,
       };
 
       setConversations((prev) => {

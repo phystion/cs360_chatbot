@@ -34,7 +34,7 @@ export function LoginScreen({ onLogin }: Props) {
     }
 
     if (username === 'test' && password === 'test') {
-      onLogin(DEPARTMENT_ROLES[department], username);
+      onLogin(DEPARTMENT_ROLES[department], 'Test User');
     } else {
       const newAttempts = attempts + 1;
       setAttempts(newAttempts);
